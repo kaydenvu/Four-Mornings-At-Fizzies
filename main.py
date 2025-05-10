@@ -38,7 +38,7 @@ energy4 = pygame.image.load("energybar/energy4.png")
 energy5 = pygame.image.load("energybar/energy5.png")
 energyBar = [energy1, energy2, energy3, energy4, energy5]
 for i, image in enumerate(energyBar):
-    energyBar[i] = pygame.transform.scale_by(image, (0.5, 0.5))
+    energyBar[i] = pygame.transform.scale_by(image, (0.25, 0.25))
 #pepsoImage = pygame.transform.scale_by(pepsoImage, (0.75, 0.75))
 #create sprite group, update everything in sprite group in main loop
 animatronics = pygame.sprite.Group()
@@ -179,8 +179,11 @@ class Button(pygame.sprite.Sprite): # make images an array, door adds + 1, light
             idx += 2
         screen.blit(self.images[idx], self.rect)
     def update(self):
-        global left_door_closed, right_door_closed
+        global left_door_closed, right_door_closed, powerPercent
         self.buttonClicked()
+        if powerPercent == 0:
+            self.toggleDoor = False
+            self.toggleLight = False
         if self.action == "left":
             left_door_closed = toggle_left_door(not self.toggleDoor)
         if self.action == "right":
@@ -207,17 +210,28 @@ def displayEnergySystem():
          energyUsage += 1
     if rightbutton.toggleDoor:
          energyUsage += 1
+    drainEnergy(energyUsage)
     energyUI = energyBar[energyUsage]
-    energyUIpos = energyUI.get_rect(topleft=(0, screen_height-100))
+    energyUIpos = energyUI.get_rect(topleft=(85, screen_height-50))
     screen.blit(energyUI, energyUIpos)
-    displayText("PixelifySans-Regular.ttf", 100, str(powerPercent) + "%", (0, screen_height - 200), (255,255,255))
+    displayText("PixelifySans-Regular.ttf", 25, "Usage: ", (0, screen_height-50), (255, 255, 255))
+    displayText("PixelifySans-Regular.ttf", 25, "Power left: " + str(powerPercent)+"%", (0, screen_height-100), (255, 255, 255)) 
 
 def displayText(font, fontSize, text, pos, color):
-    textFont = pygame.font.Font(font, fontSize)
+    textFont = pygame.font.Font(font, fontSize) 
     text = textFont.render(text, True, color)
     textPos = text.get_rect(topleft=pos)
     screen.blit(text, textPos)
 
+def drainEnergy(energyUsage):
+    global powerPercent, timeSinceDrain
+    currTime = pygame.time.get_ticks()
+    if currTime - timeSinceDrain >= 4000 - energyUsage * 500:
+        timeSinceDrain = pygame.time.get_ticks()
+        if powerPercent >= 1:
+            powerPercent -= 1
+
+timeSinceDrain = pygame.time.get_ticks()
 
 while True:
     clock.tick(60)
@@ -238,10 +252,11 @@ while True:
             cls()
             visualize()
     animatronics.update()
-    guardPOV += moveCam(guardPOV)
+    guardPOV += moveCam(guardPOV) 
     screen.blit(backGround, (guardPOV,0))
     screen.blit(pepsoImage, (screen_width//2, screen_height//2))
     displayEnergySystem()
+
     leftbutton.update()
     rightbutton.update()
     pygame.display.update()
